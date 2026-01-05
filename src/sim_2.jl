@@ -719,3 +719,99 @@ Despite the program name you need to specify whether you want fixed-indegree, wh
     @printf("\r")
     return Micro_Simulation_Annealed_fixedindegree_Results(ns, v_record, spikes, rpopE_record, rpopI_record, actpopE_record, actpopI_record, mean_h_i, var_h_i, skew_h_i)
 end
+
+function mesoscopic_model_correction_colored_noise_time_dep_stimulus(h0, s0, X0, F, G, mu_func, param; supress_eta_yn=false, supress_zeta_yn=false, r_replace=0,
+                                                                        model3d=1, naive_yn=false, div_N=1)
+#=
+Same function as above, bu this time with a $\mu = \mu(t)$
+model3d set to zero to get the model witout the colored finite size correction. I also do this in the naive model to ensure that G(h, 0)=0 without rounding errors
+=#
+    tmax    = param["tmax"]
+    dt      = param["dt"]
+    delta   = param["delta"]
+    N       = param["N"]
+    mu0     = param["mu0"]
+    w       = param["w"]
+    C       = param["C"]
+    p       = param["p"]
+    tau     = param["tau"]
+    nSteps  = trunc(Int, tmax/dt)
+    delay   = trunc(Int, delta/dt)
+    if(!haskey(param, "extra_scaling"))
+        param["extra_scaling"] = false
+    end
+
+    if(param["extra_scaling"])
+        C = param["extra_C"]
+        p = 0
+        div_N = 0
+    end
+
+    r_neg   = 0.                                    # counter for how often r was negative
+                                                    # aka how often did I need to intervene,
+                                                    # I replace the negative r with zero  
+    h       = zeros(nSteps+1)
+    s       = zeros(nSteps+1)
+    A       = zeros(nSteps+1)
+    r       = zeros(nSteps+1)
+    X       = zeros(nSteps+1)                       # Fluctuating correction to the firing rate 
+    slamb   = zeros(nSteps+1)                       # Assume X is an OU process, slamb is sigma_lambda the variance
+    eta     = zeros(nSteps+1)                       # Noise term finite-size noise
+    zeta    = zeros(nSteps+1)                       # Noise term for the OU for X
+
+    if(!supress_eta_yn)
+        rng = Random.MersenneTwister()
+        param["rng"] = rng
+        eta = randn(rng, Float64, (1, nSteps+1))
+    end
+    if(!supress_zeta_yn)
+        zeta = randn(rng, Float64, (1, nSteps+1))
+    end
+
+    X0 = X0*model3d
+    if(naive_yn)
+        s0 = 0
+        model3d = 0
+        X0 = 0
+    end
+
+    h[1:delay+1]    .= h0
+    s[1:delay+1]    .= s0
+    X[1:delay+1]    .= X0
+    A[1:delay+1]    .= F(h0, s0, param)
+    r[1:delay+1]    .= F(h0, s0, param)
+    G0               = G(h0, s0, param)*model3d
+    if(abs(G0) < 1e-10)
+        G0 = 0
+    end
+    slamb[1:delay+1].= G0#abs(G(h0, s0, param))*model3d    # apparently there can be numerical errors like -1.124910706472534e-264 \approx 0
+    #println(G(h0, s0, param)*model3d)
+
+    for i=1:(nSteps-delay)
+        h[i+1+delay]    = h[i+delay] + dt/tau * ( -h[i+delay] + mu0 + mu_func((i+delay)*dt, param) + w * A[i] )
+        s[i+1+delay]    = s[i+delay] + dt/tau * ( -2*s[i+delay] +w^2/tau * (1-p)/C * r[i] )
+        X[i+1+delay]    = X[i+delay] + dt/tau * ( -X[i+delay] + sqrt(2*tau*slamb[i+delay])*zeta[i+delay]/sqrt(dt) )
+
+        if(naive_yn)
+            s[i+1+delay] = 0
+            X[i+1+delay] = 0
+        end
+
+        slamb[i+1+delay]    = G(h[i+1+delay], s[i+1+delay], param)*model3d
+        #if(abs(slamb[i+1+delay]) < 1e-10)
+        if(slamb[i+1+delay] < 0)
+            #println(slamb[i+1+delay])
+            slamb[i+1+delay] = 0
+        end
+        r_inter             = F(h[i+1+delay], s[i+1+delay], param) + 1/sqrt(N)*X[i+1+delay]*model3d*div_N
+        if(r_inter < 0)
+            r_neg  += 1
+            r_inter = r_replace         
+        end
+        r[i+1+delay]        = r_inter
+        A[i+1+delay]        = r_inter + sqrt(r_inter/N) * eta[i+1+delay]/sqrt(dt)*div_N
+    end
+    println(r_neg)
+    #println()
+    return mesoscopic_model_correction_colored_noise_Results(h, s, A, r, r_neg, X)
+end
