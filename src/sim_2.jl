@@ -900,6 +900,47 @@ function mean_complete_analytical_approximation(param)
     sig_val     = -w*mu0*(1-p)/(2*tau*N*p)
     r_val       = -mu0/w
 
+	function linearized_variance_color_corrected_Gamma_Matrix_Analysis(param, naive_model_yn; turn_off_xi_variable=false)
+    w   = param["w"]
+    tau = param["tau"]
+    N   = param["N"]
+    C   = param["C"]
+    p   = param["p"]
+    if(naive_model_yn)
+        p = 1
+    end
+
+    # fixed points and partial derivatives of F at the fixed points
+    hfix, sfix, r0, fix_found = PSD_get_one_fix_point(param, naive_model_yn)
+    Fh  = delFdelh_sig_erf(hfix, sfix, param)
+    if(!naive_model_yn)
+        Fs = delFdels_sig_erf(hfix, sfix, param)
+        G0 = G_sigm_erf(h0, s0, param)
+    else
+        Fs = 0
+        G0 = 0
+    end
+    
+    # abbreviations
+    alpha   = w/tau
+    beta    = w^2/(tau^2*C)*(1-p)
+    println(p)
+    if(naive_model_yn)
+        beta = 0
+    end
+    gamma   = 1/sqrt(N)
+
+    # Gamma matrix elements
+    G11 = Fh*alpha - 1/tau 
+    G12 = Fs*alpha
+    G13 = gamma*alpha
+    G21 = Fh*beta
+    G22 = Fs*beta-2/tau
+    G23 = gamma*beta
+    G33 = -1/tau
+
+    return G11, G12, G13, G21, G22, G23, 0, 0, G33, Fh, Fs, alpha, beta, gamma, hfix, sfix, r0 
+end
     Phi_inv_val = sqrt(2)*erfinv(2*(-mu0/(w*rm))-1)
     h_val       =  Phi_inv_val * sqrt(1/beta^2 + sig_val) 
 
