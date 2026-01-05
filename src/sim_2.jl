@@ -308,3 +308,51 @@ results:
     #@printf("\r")
     return Micro_Simulation_Results(ns, v_record, spikes, rpopE_record, rpopI_record, actpopE_record, actpopI_record, mean_h_i, var_h_i, skew_h_i)
 end
+
+function get_git_commit_id(get_also_current_time=false)
+    try
+        commit_id = strip(read(`git rev-parse HEAD`, String))
+    catch
+        commit_id = "UNKNOWN"
+    end
+    if(get_also_current_time)
+        commit_id = commit_id * " and date " * strip(read(`date`, String))
+    end
+    return commit_id
+end
+
+function save_simulation_result(data_folder, source_file_path, filename; get_also_current_time=false)
+    filename_uuid = filename * "_$(uuid4())"
+
+    # Generate a unique identifier for the result file
+    result_filename = filename_uuid * ".para"
+    
+    # Create the destination path
+    destination_path = joinpath(data_folder, result_filename)
+    
+    # Copy the source file to the destination folder
+    cp(source_file_path, destination_path)
+    
+    # Get the current commit ID
+    commit_id = get_git_commit_id(get_also_current_time)
+    
+    # Prepend the commit ID to the copied file
+    prepend_commit_id(destination_path, commit_id)
+    
+    println("Simulation result saved to: $destination_path")
+    return filename_uuid
+end
+
+function prepend_commit_id(file_path, commit_id)
+    # Read the existing content of the file
+    content = read(file_path, String)
+    
+    # Prepend the commit ID to the content
+    new_content = "# Commit ID $commit_id\n$content"
+    
+    # Write the updated content back to the file
+    open(file_path, "w") do file
+        write(file, new_content)
+    end
+end
+
