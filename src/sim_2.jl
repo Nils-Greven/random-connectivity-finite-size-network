@@ -815,3 +815,71 @@ model3d set to zero to get the model witout the colored finite size correction. 
     #println()
     return mesoscopic_model_correction_colored_noise_Results(h, s, A, r, r_neg, X)
 end
+
+function linearized_variance_color_corrected(param, naive_model_yn; turn_off_xi_variable=false)
+    w   = param["w"]
+    tau = param["tau"]
+    N   = param["N"]
+    C   = param["C"]
+    p   = param["p"]
+    if(naive_yn)
+        p = 1
+    end
+    if(!haskey(param, "mu_sigma_ext"))
+        param["mu_sigma_ext"] = 0
+    end
+    mu_sigma_ext = param["mu_sigma_ext"]
+
+    # fixed points and partial derivatives of F at the fixed points
+    hfix, sfix, r0, fix_found = PSD_get_one_fix_point(param, naive_model_yn)
+    Fh  = delFdelh_sig_erf(hfix, sfix, param)
+    if(!naive_model_yn)
+        Fs = delFdels_sig_erf(hfix, sfix, param)
+        G0 = G_sigm_erf(hfix, sfix, param)
+    else
+        Fs = 0
+        G0 = 0
+    end
+    
+    # abbreviations
+    alpha   = w/tau
+    beta    = w^2/(tau^2*C)*(1-p)
+    if(naive_yn)
+        beta = 0
+    end
+    gamma   = 1/sqrt(N)
+
+    # Gamma matrix elements
+    G11 = Fh*alpha - 1/tau 
+    G12 = Fs*alpha
+    G13 = gamma*alpha
+    G21 = Fh*beta
+    G22 = Fs*beta-2/tau
+    G23 = gamma*beta
+    G33 = -1/tau
+    E   = -4*(G11+G22)*(G11*G22-G12*G21)    # Determinant of the subsystem [[G11, G12], [G21, G22]]
+    D   = (G11+G33)*(G22+G33)-G12*G21
+    #pre = -2*w^2*r0/(tau^2*E*N)
+    pre = -2 * (mu_sigma_ext/tau + r0*w^2/tau^2*1/N)/E
+
+    if(turn_off_xi_variable)
+        s13 = 0
+        s23 = 0
+        s33 = 0
+    else
+        s33 = G0
+        #s13 = -G0/D *( G13*(G22+G33) - G23*G12)
+        s13 = G0/D * ( G23*G12 - G13*(G22+G33) )
+        #s23 = -G0/D *( G13*G21 + G23*(G11+G33) )
+        s23 = G0/D * ( G13*G21 - G23*(G11+G33) )
+    end
+
+    s11 = pre * ( G12*G21 - G22*(G11+G22) ) -4*s13/E *( G13*(G21*G12 - G22*(G11+G22)) + G23*G12*G22 ) -4*s23/E * ( G23*G12^2 + G13*G12*G22 )
+    s12 = pre * ( G21 * G22 ) + 4*s13/E * ( -G21*G22*G13 + G11*G22*G23 ) + 4*s23/E * ( G23*G11*G12 + G13*G11*G22 )
+    s22 = pre * ( -G21^2 ) + 4*s13/E * ( G21^2*G13-G11*G21*G23 ) + 4*s23/E * ( (G11*(G11+G22)-G21*G12)*G23 -G11*G21*G13 )
+
+    # now for the firing rate
+    sr = Fh^2*s11 + Fs^2*s22 + s33/N + 2*Fh*Fs*s12 + 2*Fh*gamma*s13 + 2*Fs*gamma*s23 
+    #println(sr)
+    return s11, s12, s22, s13, s23, s33, sr
+end
