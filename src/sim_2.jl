@@ -883,3 +883,25 @@ function linearized_variance_color_corrected(param, naive_model_yn; turn_off_xi_
     #println(sr)
     return s11, s12, s22, s13, s23, s33, sr
 end
+
+function mean_complete_analytical_approximation(param)
+    # mean in completely approximate form, should be also in the plotting tool, but here as a function to play around with:
+    mu0 = param["mu0"]
+    rm  = param["Phimax"]
+    w   = param["w"]
+    tau = param["tau"]
+    N   = param["N"]
+    beta= param["beta"]
+    p   = param["p"]
+    if(!haskey(param, "sig_ext"))
+        param["sig_ext"] = 0
+    end
+    sig_ext = param["sig_ext"]
+    sig_val     = -w*mu0*(1-p)/(2*tau*N*p)
+    r_val       = -mu0/w
+
+    Phi_inv_val = sqrt(2)*erfinv(2*(-mu0/(w*rm))-1)
+    h_val       =  Phi_inv_val * sqrt(1/beta^2 + sig_val) 
+
+    return h_val, sig_val, r_val
+end
