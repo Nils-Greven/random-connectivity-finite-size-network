@@ -16,10 +16,6 @@ schematic and purely illustrative
 ## Fig 4.
 
 ## Fig 5.
-
-## Fig 6.
-
-## Fig 7.
 - `var_annealed_several_p.jl`:
     parameters inside the file need to be adapted to the values of the figure
     - `micro_yn = true` for the quenched network
@@ -27,5 +23,8 @@ schematic and purely illustrative
     - `meso_yn     = true` for MF2
     - `naive_yn    = true` for MF1
 
+## Fig 6.
+
+## Fig 7.
 
 ## FIg 8.
