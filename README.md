@@ -20,7 +20,9 @@ schematic and purely illustrative
 ## Fig 3.
 a) Can be calculated via `F_sigm_erf` for instance in `Plot_Fh_of_mu.jl`
 
-b)
+b) Calculated via `onset_of_oscillation_sig_erf_vary_any_two_parameter.jl`
+
+c)
 
 ## Fig 4.
 
