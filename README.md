@@ -40,4 +40,5 @@ d-f) Can be calculated via `Susceptibility_with_WN_modulation.jl`
 
 ## Fig 7.
 
-## FIg 8.
+## Fig 8.
+`wlim_color_correction.jl` has been used
