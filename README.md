@@ -22,7 +22,9 @@ a) Can be calculated via `F_sigm_erf` for instance in `Plot_Fh_of_mu.jl`
 
 b) Calculated via `onset_of_oscillation_sig_erf_vary_any_two_parameter.jl`
 
-c)
+c) Trajectories can be directly calculated with the functions mentioned above
+
+d-f) Can be calculated via `Susceptibility_with_WN_modulation.jl`
 
 ## Fig 4.
 
