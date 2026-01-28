@@ -18,6 +18,9 @@ In general the following functions have been used for the simulation of the diff
 schematic and purely illustrative
 
 ## Fig 3.
+a) Can be calculated via `F_sigm_erf` for instance in `Plot_Fh_of_mu.jl`
+
+b)
 
 ## Fig 4.
 
