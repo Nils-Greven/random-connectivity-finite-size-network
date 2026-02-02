@@ -12,6 +12,8 @@ In general the following functions have been used for the simulation of the diff
 - MF1 and MF2: `mesoscopic_model_correction_colored_noise_time_dep_stimulus`
 - MFSparselim has been taken with the same function as MF1/2 but for large $N$ and a correspondingly small $p$
 
+You can explore my implementation of these models via `Demo_of_different_models_for_paper.jl`
+
 ## Fig 1.
 
 ## Fig 2.
